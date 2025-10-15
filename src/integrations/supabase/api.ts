@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type CreateCourseInput = {
+  id?: string; // optional custom UUID
   title: string;
   description?: string;
   instructorId: string;
@@ -10,16 +11,19 @@ export type CreateCourseInput = {
 };
 
 export async function createCourse(input: CreateCourseInput) {
+  const insertBody: any = {
+    title: input.title,
+    description: input.description ?? null,
+    instructor_id: input.instructorId,
+    skill_category: input.skillCategory,
+    duration_hours: input.durationHours ?? null,
+    is_published: input.isPublished ?? false,
+  };
+  if (input.id) insertBody.id = input.id;
+
   const { data, error } = await supabase
     .from("courses")
-    .insert({
-      title: input.title,
-      description: input.description ?? null,
-      instructor_id: input.instructorId,
-      skill_category: input.skillCategory,
-      duration_hours: input.durationHours ?? null,
-      is_published: input.isPublished ?? false,
-    })
+    .insert(insertBody)
     .select("*")
     .single();
 

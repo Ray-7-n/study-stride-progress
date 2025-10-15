@@ -25,6 +25,13 @@ const InstructorDashboard = () => {
   const [editDuration, setEditDuration] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createTitle, setCreateTitle] = useState("");
+  const [createId, setCreateId] = useState("");
+  const [createCategory, setCreateCategory] = useState("general");
+  const [createDescription, setCreateDescription] = useState("");
+  const [creating, setCreating] = useState(false);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
@@ -85,20 +92,37 @@ const InstructorDashboard = () => {
     setCourses(data || []);
   };
 
+  const handleOpenCreate = () => {
+    setCreateTitle("");
+    setCreateId("");
+    setCreateCategory("general");
+    setCreateDescription("");
+    setCreateOpen(true);
+  };
+
   const handleCreateCourse = async () => {
     if (!user) return;
+    if (!createTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    setCreating(true);
     try {
       const newCourse = await createCourse({
-        title: "Untitled Course",
-        description: "",
+        id: createId.trim() || undefined,
+        title: createTitle.trim(),
+        description: createDescription.trim() || undefined,
         instructorId: user.id,
-        skillCategory: "general",
+        skillCategory: createCategory.trim() || "general",
         isPublished: false,
       });
       toast.success("Course created");
       setCourses((prev) => [newCourse, ...prev]);
+      setCreateOpen(false);
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to create course");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -181,7 +205,7 @@ const InstructorDashboard = () => {
             <h1 className="text-4xl font-bold mb-2">Instructor Dashboard</h1>
             <p className="text-muted-foreground">Manage your courses and track student progress</p>
           </div>
-          <Button className="bg-gradient-primary shadow-elegant" onClick={handleCreateCourse}>
+          <Button className="bg-gradient-primary shadow-elegant" onClick={handleOpenCreate}>
             <Plus className="h-4 w-4 mr-2" />
             Create Course
           </Button>
@@ -234,7 +258,7 @@ const InstructorDashboard = () => {
               <div className="text-center py-12">
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">No courses created yet</p>
-                <Button className="bg-gradient-primary shadow-elegant" onClick={handleCreateCourse}>
+                <Button className="bg-gradient-primary shadow-elegant" onClick={handleOpenCreate}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Your First Course
                 </Button>
@@ -283,6 +307,36 @@ const InstructorDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Course</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-title">Title</Label>
+              <Input id="new-title" value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-id">Course ID (optional UUID)</Label>
+              <Input id="new-id" value={createId} onChange={(e) => setCreateId(e.target.value)} placeholder="e.g., 9d2c0c12-..." />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-category">Category</Label>
+              <Input id="new-category" value={createCategory} onChange={(e) => setCreateCategory(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-desc">Description</Label>
+              <Input id="new-desc" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Cancel</Button>
+            <Button onClick={handleCreateCourse} disabled={creating}>{creating ? "Creating..." : "Create"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
