@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, TrendingUp, Award, LogOut, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import { listPublishedCourses, enrollInCourse } from "@/integrations/supabase/api";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const StudentDashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<any[]>([]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -33,6 +35,7 @@ const StudentDashboard = () => {
     if (user) {
       loadProfile();
       loadEnrollments();
+      loadAvailableCourses();
     }
   }, [user]);
 
@@ -81,6 +84,26 @@ const StudentDashboard = () => {
     }
 
     setEnrollments(data || []);
+  };
+
+  const loadAvailableCourses = async () => {
+    try {
+      const published = await listPublishedCourses();
+      setAvailableCourses(published);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleEnroll = async (courseId: string) => {
+    if (!user) return;
+    try {
+      await enrollInCourse(user.id, courseId);
+      toast.success("Enrolled successfully");
+      await loadEnrollments();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to enroll");
+    }
   };
 
   const handleSignOut = async () => {
@@ -201,6 +224,40 @@ const StudentDashboard = () => {
                     <Button variant="outline" size="sm" className="mt-2">
                       Continue Learning
                     </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card mt-8">
+          <CardHeader>
+            <CardTitle>Browse Courses</CardTitle>
+            <CardDescription>Enroll in published courses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {availableCourses.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No courses available yet</div>
+            ) : (
+              <div className="space-y-4">
+                {availableCourses.map((course) => (
+                  <div
+                    key={course.id}
+                    className="p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{course.title}</h3>
+                        <p className="text-sm text-muted-foreground">{course.skill_category}</p>
+                        {course.description && (
+                          <p className="text-sm mt-1">{course.description}</p>
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => handleEnroll(course.id)}>
+                        Enroll
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

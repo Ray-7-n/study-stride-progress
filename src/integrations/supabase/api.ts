@@ -49,4 +49,35 @@ export async function listInstructorCourses(instructorId: string) {
   return data ?? [];
 }
 
+export async function listPublishedCourses() {
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id,title,description,skill_category,is_published,created_at")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function enrollInCourse(studentId: string, courseId: string) {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .insert({ student_id: studentId, course_id: courseId })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateCoursePublish(courseId: string, isPublished: boolean) {
+  const { data, error } = await supabase
+    .from("courses")
+    .update({ is_published: isPublished })
+    .eq("id", courseId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 

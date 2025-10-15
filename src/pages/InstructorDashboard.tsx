@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse } from "@/integrations/supabase/api";
+import { createCourse, updateCoursePublish } from "@/integrations/supabase/api";
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
@@ -89,6 +89,16 @@ const InstructorDashboard = () => {
       setCourses((prev) => [newCourse, ...prev]);
     } catch (err: any) {
       toast.error(err?.message ?? "Failed to create course");
+    }
+  };
+
+  const togglePublish = async (courseId: string, current: boolean) => {
+    try {
+      const updated = await updateCoursePublish(courseId, !current);
+      setCourses((prev) => prev.map((c) => (c.id === courseId ? updated : c)));
+      toast.success(!current ? "Published" : "Unpublished");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update publish state");
     }
   };
 
@@ -184,7 +194,7 @@ const InstructorDashboard = () => {
               <div className="text-center py-12">
                 <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground mb-4">No courses created yet</p>
-                <Button className="bg-gradient-primary shadow-elegant">
+                <Button className="bg-gradient-primary shadow-elegant" onClick={handleCreateCourse}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Your First Course
                 </Button>
@@ -213,9 +223,18 @@ const InstructorDashboard = () => {
                         <p className="text-sm text-muted-foreground mb-2">{course.skill_category}</p>
                         <p className="text-sm">{course.description}</p>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Edit Course
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm">
+                          Edit Course
+                        </Button>
+                        <Button
+                          variant={course.is_published ? "secondary" : "default"}
+                          size="sm"
+                          onClick={() => togglePublish(course.id, !!course.is_published)}
+                        >
+                          {course.is_published ? "Unpublish" : "Publish"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
