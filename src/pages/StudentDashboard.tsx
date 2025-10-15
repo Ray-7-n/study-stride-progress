@@ -44,7 +44,7 @@ const StudentDashboard = () => {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id,full_name,email,role,phone,date_of_birth")
       .eq("id", user.id)
       .single();
 

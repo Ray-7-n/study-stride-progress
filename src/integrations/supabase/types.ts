@@ -60,6 +60,8 @@ export type Database = {
           description: string | null
           id: string
           passing_score: number
+          level: Database["public"]["Enums"]["skill_level"]
+          mode: string | null
           title: string
           total_points: number
         }
@@ -69,6 +71,8 @@ export type Database = {
           description?: string | null
           id?: string
           passing_score?: number
+          level?: Database["public"]["Enums"]["skill_level"]
+          mode?: string | null
           title: string
           total_points?: number
         }
@@ -78,6 +82,8 @@ export type Database = {
           description?: string | null
           id?: string
           passing_score?: number
+          level?: Database["public"]["Enums"]["skill_level"]
+          mode?: string | null
           title?: string
           total_points?: number
         }
@@ -296,25 +302,34 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          date_of_birth: string | null
           email: string
           full_name: string
           id: string
+          phone: string | null
+          experience: number | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
           created_at?: string
+          date_of_birth?: string | null
           email: string
           full_name: string
           id: string
+          phone?: string | null
+          experience?: number | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
           created_at?: string
+          date_of_birth?: string | null
           email?: string
           full_name?: string
           id?: string
+          phone?: string | null
+          experience?: number | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }

@@ -36,7 +36,7 @@ export async function createCourse(input: CreateCourseInput) {
 export async function getProfileByUserId(userId: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id,email,full_name,role,phone,date_of_birth,experience,created_at,updated_at")
     .eq("id", userId)
     .single();
 
@@ -93,6 +93,7 @@ export type UpdateCourseInput = {
   skillCategory?: string;
   courseCode?: string | null;
   durationHours?: number | null;
+  // assessment-related fields handled in dedicated endpoints later
 };
 
 export async function updateCourseDetails(input: UpdateCourseInput) {
@@ -113,4 +114,104 @@ export async function updateCourseDetails(input: UpdateCourseInput) {
   return data;
 }
 
+// Profile update (phone, date_of_birth, experience)
+export type UpdateProfileInput = {
+  id: string;
+  phone?: string | null;
+  dateOfBirth?: string | null; // ISO date (YYYY-MM-DD)
+  experience?: number | null; // years
+};
 
+export async function updateProfile(input: UpdateProfileInput) {
+  const update: any = {};
+  if (typeof input.phone !== "undefined") update.phone = input.phone;
+  if (typeof input.dateOfBirth !== "undefined") update.date_of_birth = input.dateOfBirth;
+  if (typeof input.experience !== "undefined") update.experience = input.experience;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(update)
+    .eq("id", input.id)
+    .select("id,email,full_name,role,phone,date_of_birth,experience,created_at,updated_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Assessments CRUD
+export type CreateAssessmentInput = {
+  courseId: string;
+  title: string;
+  description?: string | null;
+  totalPoints?: number; // default 100
+  passingScore?: number; // default 70
+  level?: "beginner" | "intermediate" | "advanced" | "expert";
+  mode?: string | null; // e.g., quiz, assignment, project
+};
+
+export async function listAssessmentsByCourse(courseId: string) {
+  const { data, error } = await supabase
+    .from("assessments")
+    .select("id,course_id,title,description,total_points,passing_score,level,mode,created_at")
+    .eq("course_id", courseId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createAssessment(input: CreateAssessmentInput) {
+  const insertBody: any = {
+    course_id: input.courseId,
+    title: input.title,
+    description: input.description ?? null,
+    total_points: typeof input.totalPoints === "number" ? input.totalPoints : undefined,
+    passing_score: typeof input.passingScore === "number" ? input.passingScore : undefined,
+    level: input.level ?? undefined,
+    mode: typeof input.mode !== "undefined" ? input.mode : undefined,
+  };
+
+  const { data, error } = await supabase
+    .from("assessments")
+    .insert(insertBody)
+    .select("id,course_id,title,description,total_points,passing_score,level,mode,created_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export type UpdateAssessmentInput = {
+  id: string;
+  title?: string;
+  description?: string | null;
+  totalPoints?: number | null;
+  passingScore?: number | null;
+  level?: "beginner" | "intermediate" | "advanced" | "expert";
+  mode?: string | null;
+};
+
+export async function updateAssessment(input: UpdateAssessmentInput) {
+  const update: any = {};
+  if (typeof input.title !== "undefined") update.title = input.title;
+  if (typeof input.description !== "undefined") update.description = input.description;
+  if (typeof input.totalPoints !== "undefined") update.total_points = input.totalPoints;
+  if (typeof input.passingScore !== "undefined") update.passing_score = input.passingScore;
+  if (typeof input.level !== "undefined") update.level = input.level;
+  if (typeof input.mode !== "undefined") update.mode = input.mode;
+
+  const { data, error } = await supabase
+    .from("assessments")
+    .update(update)
+    .eq("id", input.id)
+    .select("id,course_id,title,description,total_points,passing_score,level,mode,created_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteAssessment(id: string) {
+  const { error } = await supabase
+    .from("assessments")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}

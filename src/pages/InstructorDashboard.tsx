@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse, updateCoursePublish, updateCourseDetails } from "@/integrations/supabase/api";
+import { createCourse, updateCoursePublish, updateCourseDetails, listAssessmentsByCourse, createAssessment, updateAssessment, deleteAssessment } from "@/integrations/supabase/api";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,18 @@ const InstructorDashboard = () => {
   const [editDuration, setEditDuration] = useState<string>("");
   const [editCode, setEditCode] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
+  // Assessments state
+  const [assessmentsByCourse, setAssessmentsByCourse] = useState<Record<string, any[]>>({});
+  const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
+  const [activeCourseForAssessments, setActiveCourseForAssessments] = useState<any | null>(null);
+  const [newAssessmentTitle, setNewAssessmentTitle] = useState("");
+  const [newAssessmentDesc, setNewAssessmentDesc] = useState("");
+  const [newAssessmentLevel, setNewAssessmentLevel] = useState<"beginner" | "intermediate" | "advanced" | "expert">("beginner");
+  const [newAssessmentMode, setNewAssessmentMode] = useState("");
+  const [newAssessmentPoints, setNewAssessmentPoints] = useState<string>("100");
+  const [newAssessmentPassing, setNewAssessmentPassing] = useState<string>("70");
+  const [savingAssessment, setSavingAssessment] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
@@ -60,7 +72,7 @@ const InstructorDashboard = () => {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id,full_name,email,role,phone,date_of_birth,experience")
       .eq("id", user.id)
       .single();
 
@@ -92,6 +104,17 @@ const InstructorDashboard = () => {
     }
 
     setCourses(data || []);
+  };
+
+  const openAssessments = async (course: any) => {
+    setActiveCourseForAssessments(course);
+    try {
+      const list = await listAssessmentsByCourse(course.id);
+      setAssessmentsByCourse((prev) => ({ ...prev, [course.id]: list }));
+    } catch (e) {
+      setAssessmentsByCourse((prev) => ({ ...prev, [course.id]: [] }));
+    }
+    setAssessmentModalOpen(true);
   };
 
   const handleOpenCreate = () => {
@@ -210,6 +233,12 @@ const InstructorDashboard = () => {
           <div>
             <h1 className="text-4xl font-bold mb-2">Instructor Dashboard</h1>
             <p className="text-muted-foreground">Manage your courses and track student progress</p>
+            {profile?.phone && (
+              <p className="text-xs text-muted-foreground">Phone: {profile.phone}</p>
+            )}
+            {typeof profile?.experience === "number" && (
+              <p className="text-xs text-muted-foreground">Experience: {profile.experience} yrs</p>
+            )}
           </div>
           <Button className="bg-gradient-primary shadow-elegant" onClick={handleOpenCreate}>
             <Plus className="h-4 w-4 mr-2" />
@@ -302,6 +331,9 @@ const InstructorDashboard = () => {
                         <Button variant="outline" size="sm" onClick={() => openEdit(course)}>
                           Edit Course
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => openAssessments(course)}>
+                          Manage Assessments
+                        </Button>
                         <Button
                           variant={course.is_published ? "secondary" : "default"}
                           size="sm"
@@ -349,6 +381,108 @@ const InstructorDashboard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Cancel</Button>
             <Button onClick={handleCreateCourse} disabled={creating}>{creating ? "Creating..." : "Create"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={assessmentModalOpen} onOpenChange={setAssessmentModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Assessments {activeCourseForAssessments ? `– ${activeCourseForAssessments.title}` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {activeCourseForAssessments && (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium mb-2">Existing</p>
+                  <div className="space-y-2 max-h-64 overflow-auto">
+                    {(assessmentsByCourse[activeCourseForAssessments.id] || []).map((a) => (
+                      <div key={a.id} className="p-2 border rounded flex items-center justify-between">
+                        <div className="text-sm">
+                          <div className="font-medium">{a.title}</div>
+                          <div className="text-xs text-muted-foreground">{a.level}{a.mode ? ` · ${a.mode}` : ""} · {a.passing_score}/{a.total_points}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={async () => {
+                            const nextMode = a.mode === "quiz" ? "assignment" : "quiz";
+                            const updated = await updateAssessment({ id: a.id, mode: nextMode });
+                            setAssessmentsByCourse((prev) => ({
+                              ...prev,
+                              [activeCourseForAssessments.id]: (prev[activeCourseForAssessments.id] || []).map((x) => x.id === a.id ? updated : x)
+                            }));
+                          }}>Toggle Mode</Button>
+                          <Button variant="destructive" size="sm" onClick={async () => {
+                            await deleteAssessment(a.id);
+                            setAssessmentsByCourse((prev) => ({
+                              ...prev,
+                              [activeCourseForAssessments.id]: (prev[activeCourseForAssessments.id] || []).filter((x) => x.id !== a.id)
+                            }));
+                          }}>Delete</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-2">Create New</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="ass-title">Title</Label>
+                      <Input id="ass-title" value={newAssessmentTitle} onChange={(e) => setNewAssessmentTitle(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ass-level">Level</Label>
+                      <Input id="ass-level" value={newAssessmentLevel} onChange={(e) => setNewAssessmentLevel(e.target.value as any)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ass-mode">Mode</Label>
+                      <Input id="ass-mode" value={newAssessmentMode} onChange={(e) => setNewAssessmentMode(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ass-points">Total Points</Label>
+                      <Input id="ass-points" type="number" min="1" value={newAssessmentPoints} onChange={(e) => setNewAssessmentPoints(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="ass-pass">Passing Score</Label>
+                      <Input id="ass-pass" type="number" min="0" value={newAssessmentPassing} onChange={(e) => setNewAssessmentPassing(e.target.value)} />
+                    </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label htmlFor="ass-desc">Description</Label>
+                      <Input id="ass-desc" value={newAssessmentDesc} onChange={(e) => setNewAssessmentDesc(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssessmentModalOpen(false)} disabled={savingAssessment}>Close</Button>
+            <Button onClick={async () => {
+              if (!activeCourseForAssessments) return;
+              setSavingAssessment(true);
+              try {
+                const created = await createAssessment({
+                  courseId: activeCourseForAssessments.id,
+                  title: newAssessmentTitle.trim(),
+                  description: newAssessmentDesc.trim() || null,
+                  totalPoints: newAssessmentPoints ? Number(newAssessmentPoints) : undefined,
+                  passingScore: newAssessmentPassing ? Number(newAssessmentPassing) : undefined,
+                  level: newAssessmentLevel,
+                  mode: newAssessmentMode.trim() || null,
+                });
+                setAssessmentsByCourse((prev) => ({
+                  ...prev,
+                  [activeCourseForAssessments.id]: [created, ...(prev[activeCourseForAssessments.id] || [])]
+                }));
+                setNewAssessmentTitle("");
+                setNewAssessmentDesc("");
+                setNewAssessmentMode("");
+                setNewAssessmentPoints("100");
+                setNewAssessmentPassing("70");
+              } finally {
+                setSavingAssessment(false);
+              }
+            }} disabled={savingAssessment || !newAssessmentTitle.trim()}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
