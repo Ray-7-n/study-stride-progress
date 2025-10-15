@@ -6,6 +6,7 @@ export type CreateCourseInput = {
   description?: string;
   instructorId: string;
   skillCategory: string;
+  courseCode?: string; // custom human-readable code like ABC123
   durationHours?: number;
   isPublished?: boolean;
 };
@@ -16,6 +17,7 @@ export async function createCourse(input: CreateCourseInput) {
     description: input.description ?? null,
     instructor_id: input.instructorId,
     skill_category: input.skillCategory,
+    course_code: input.courseCode ?? undefined,
     duration_hours: input.durationHours ?? null,
     is_published: input.isPublished ?? false,
   };
@@ -89,6 +91,7 @@ export type UpdateCourseInput = {
   title?: string;
   description?: string | null;
   skillCategory?: string;
+  courseCode?: string | null;
   durationHours?: number | null;
 };
 
@@ -97,6 +100,7 @@ export async function updateCourseDetails(input: UpdateCourseInput) {
   if (typeof input.title !== "undefined") update.title = input.title;
   if (typeof input.description !== "undefined") update.description = input.description;
   if (typeof input.skillCategory !== "undefined") update.skill_category = input.skillCategory;
+  if (typeof input.courseCode !== "undefined") update.course_code = input.courseCode;
   if (typeof input.durationHours !== "undefined") update.duration_hours = input.durationHours;
 
   const { data, error } = await supabase

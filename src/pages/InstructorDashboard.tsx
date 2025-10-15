@@ -23,6 +23,7 @@ const InstructorDashboard = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editDuration, setEditDuration] = useState<string>("");
+  const [editCode, setEditCode] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -30,6 +31,7 @@ const InstructorDashboard = () => {
   const [createId, setCreateId] = useState("");
   const [createCategory, setCreateCategory] = useState("general");
   const [createDescription, setCreateDescription] = useState("");
+  const [createCode, setCreateCode] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -97,6 +99,7 @@ const InstructorDashboard = () => {
     setCreateId("");
     setCreateCategory("general");
     setCreateDescription("");
+    setCreateCode("");
     setCreateOpen(true);
   };
 
@@ -114,6 +117,7 @@ const InstructorDashboard = () => {
         description: createDescription.trim() || undefined,
         instructorId: user.id,
         skillCategory: createCategory.trim() || "general",
+        courseCode: createCode.trim() || undefined,
         isPublished: false,
       });
       toast.success("Course created");
@@ -142,6 +146,7 @@ const InstructorDashboard = () => {
     setEditDescription(course.description || "");
     setEditCategory(course.skill_category || "");
     setEditDuration(course.duration_hours != null ? String(course.duration_hours) : "");
+    setEditCode(course.course_code || "");
     setEditOpen(true);
   };
 
@@ -154,6 +159,7 @@ const InstructorDashboard = () => {
         title: editTitle.trim(),
         description: editDescription.trim() || null,
         skillCategory: editCategory.trim(),
+        courseCode: editCode.trim() || null,
         durationHours: editDuration ? Number(editDuration) : null,
       });
       setCourses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
@@ -284,7 +290,12 @@ const InstructorDashboard = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{course.skill_category}</p>
+                        <p className="text-sm text-muted-foreground mb-1">{course.skill_category}</p>
+                        {course.course_code ? (
+                          <p className="text-xs text-muted-foreground mb-2">Code: {course.course_code}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground mb-2">Code: 0</p>
+                        )}
                         <p className="text-sm">{course.description}</p>
                       </div>
                       <div className="flex gap-2">
@@ -323,6 +334,10 @@ const InstructorDashboard = () => {
               <Input id="new-id" value={createId} onChange={(e) => setCreateId(e.target.value)} placeholder="e.g., 9d2c0c12-..." />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="new-code">Course Code (e.g., ABC123)</Label>
+              <Input id="new-code" value={createCode} onChange={(e) => setCreateCode(e.target.value)} />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="new-category">Category</Label>
               <Input id="new-category" value={createCategory} onChange={(e) => setCreateCategory(e.target.value)} />
             </div>
@@ -355,6 +370,10 @@ const InstructorDashboard = () => {
             <div className="space-y-2">
               <Label htmlFor="course-category">Category</Label>
               <Input id="course-category" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="course-code">Course Code</Label>
+              <Input id="course-code" value={editCode} onChange={(e) => setEditCode(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="course-duration">Duration (hours)</Label>
