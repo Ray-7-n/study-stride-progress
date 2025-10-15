@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "db:push": "supabase db push --db-url postgresql://postgres:Esb%26UpsfYV7VG%2FU@db.efqbcrchmazqbscqifsn.supabase.co:5432/postgres",
-    "db:reset": "supabase db reset --db-url postgresql://postgres:Esb%26UpsfYV7VG%2FU@db.efqbcrchmazqbscqifsn.supabase.co:5432/postgres --force"
+    "db:reset": "supabase db reset --db-url postgresql://postgres:Esb%26UpsfYV7VG%2FU@db.efqbcrchmazqbscqifsn.supabase.co:5432/postgres"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
