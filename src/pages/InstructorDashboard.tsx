@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse, updateCoursePublish } from "@/integrations/supabase/api";
+import { createCourse, updateCoursePublish, updateCourseDetails } from "@/integrations/supabase/api";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
@@ -14,6 +17,13 @@ const InstructorDashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editCourse, setEditCourse] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editDuration, setEditDuration] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -99,6 +109,36 @@ const InstructorDashboard = () => {
       toast.success(!current ? "Published" : "Unpublished");
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to update publish state");
+    }
+  };
+
+  const openEdit = (course: any) => {
+    setEditCourse(course);
+    setEditTitle(course.title || "");
+    setEditDescription(course.description || "");
+    setEditCategory(course.skill_category || "");
+    setEditDuration(course.duration_hours != null ? String(course.duration_hours) : "");
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editCourse) return;
+    setSaving(true);
+    try {
+      const updated = await updateCourseDetails({
+        id: editCourse.id,
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        skillCategory: editCategory.trim(),
+        durationHours: editDuration ? Number(editDuration) : null,
+      });
+      setCourses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      toast.success("Course updated");
+      setEditOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to update course");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -224,7 +264,7 @@ const InstructorDashboard = () => {
                         <p className="text-sm">{course.description}</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => openEdit(course)}>
                           Edit Course
                         </Button>
                         <Button
@@ -243,6 +283,36 @@ const InstructorDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Course</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="course-title">Title</Label>
+              <Input id="course-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="course-desc">Description</Label>
+              <Input id="course-desc" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="course-category">Category</Label>
+              <Input id="course-category" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="course-duration">Duration (hours)</Label>
+              <Input id="course-duration" type="number" min="0" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={saveEdit} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

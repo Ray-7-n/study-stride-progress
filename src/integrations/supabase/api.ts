@@ -80,4 +80,29 @@ export async function updateCoursePublish(courseId: string, isPublished: boolean
   return data;
 }
 
+export type UpdateCourseInput = {
+  id: string;
+  title?: string;
+  description?: string | null;
+  skillCategory?: string;
+  durationHours?: number | null;
+};
+
+export async function updateCourseDetails(input: UpdateCourseInput) {
+  const update: any = {};
+  if (typeof input.title !== "undefined") update.title = input.title;
+  if (typeof input.description !== "undefined") update.description = input.description;
+  if (typeof input.skillCategory !== "undefined") update.skill_category = input.skillCategory;
+  if (typeof input.durationHours !== "undefined") update.duration_hours = input.durationHours;
+
+  const { data, error } = await supabase
+    .from("courses")
+    .update(update)
+    .eq("id", input.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 
