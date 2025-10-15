@@ -18,6 +18,9 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"student" | "instructor">("student");
   const [resetEmail, setResetEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState(""); // YYYY-MM-DD
+  const [experience, setExperience] = useState<string>("");
 
   const routeToRole = async (userId: string) => {
     const { data, error } = await supabase
@@ -57,6 +60,9 @@ const Auth = () => {
           data: {
             full_name: fullName,
             role: role,
+            phone: phone || undefined,
+            date_of_birth: dateOfBirth || undefined,
+            experience: experience ? Number(experience) : undefined,
           },
           emailRedirectTo: `https://study-stride-progress.vercel.app/`,
         },
@@ -75,6 +81,9 @@ const Auth = () => {
       setEmail("");
       setPassword("");
       setFullName("");
+      setPhone("");
+      setDateOfBirth("");
+      setExperience("");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign up");
     } finally {
@@ -220,6 +229,37 @@ const Auth = () => {
                     required
                     minLength={6}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">Phone (optional)</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="+1 555 123 4567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-dob">Date of Birth (optional)</Label>
+                    <Input
+                      id="signup-dob"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-exp">Experience in years (optional)</Label>
+                    <Input
+                      id="signup-exp"
+                      type="number"
+                      min="0"
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>I am a...</Label>

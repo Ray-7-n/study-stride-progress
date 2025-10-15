@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { createCourse, updateCoursePublish, updateCourseDetails, listAssessmentsByCourse, createAssessment, updateAssessment, deleteAssessment } from "@/integrations/supabase/api";
+import { createCourse, updateCoursePublish, updateCourseDetails, listAssessmentsByCourse, createAssessment, updateAssessment, deleteAssessment, updateProfile } from "@/integrations/supabase/api";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,12 @@ const InstructorDashboard = () => {
   const [newAssessmentPoints, setNewAssessmentPoints] = useState<string>("100");
   const [newAssessmentPassing, setNewAssessmentPassing] = useState<string>("70");
   const [savingAssessment, setSavingAssessment] = useState(false);
+
+  // Profile edit state
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [editDob, setEditDob] = useState("");
+  const [editExperience, setEditExperience] = useState<string>("");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
@@ -87,6 +93,10 @@ const InstructorDashboard = () => {
     }
 
     setProfile(data);
+    // seed edit fields
+    setEditPhone(data?.phone || "");
+    setEditDob(data?.date_of_birth || "");
+    setEditExperience(typeof data?.experience === "number" ? String(data.experience) : "");
   };
 
   const loadCourses = async () => {
@@ -240,10 +250,13 @@ const InstructorDashboard = () => {
               <p className="text-xs text-muted-foreground">Experience: {profile.experience} yrs</p>
             )}
           </div>
-          <Button className="bg-gradient-primary shadow-elegant" onClick={handleOpenCreate}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Course
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setProfileEditOpen(true)}>Edit Profile</Button>
+            <Button className="bg-gradient-primary shadow-elegant" onClick={handleOpenCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Course
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3 mb-8">
@@ -381,6 +394,49 @@ const InstructorDashboard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>Cancel</Button>
             <Button onClick={handleCreateCourse} disabled={creating}>{creating ? "Creating..." : "Create"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={profileEditOpen} onOpenChange={setProfileEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="instructor-phone">Phone</Label>
+              <Input id="instructor-phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="instructor-dob">Date of Birth</Label>
+                <Input id="instructor-dob" type="date" value={editDob} onChange={(e) => setEditDob(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="instructor-exp">Experience (years)</Label>
+                <Input id="instructor-exp" type="number" min="0" value={editExperience} onChange={(e) => setEditExperience(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfileEditOpen(false)}>Cancel</Button>
+            <Button onClick={async () => {
+              if (!user) return;
+              try {
+                const updated = await updateProfile({
+                  id: user.id,
+                  phone: editPhone || null,
+                  dateOfBirth: editDob || null,
+                  experience: editExperience ? Number(editExperience) : null,
+                });
+                setProfile(updated);
+                toast.success("Profile updated");
+                setProfileEditOpen(false);
+              } catch (e: any) {
+                toast.error(e?.message ?? "Failed to update profile");
+              }
+            }}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

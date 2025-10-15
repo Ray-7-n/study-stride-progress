@@ -5,9 +5,12 @@ import { User, Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { BookOpen, TrendingUp, Award, LogOut, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
-import { listPublishedCourses, enrollInCourse } from "@/integrations/supabase/api";
+import { listPublishedCourses, enrollInCourse, updateProfile } from "@/integrations/supabase/api";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -16,6 +19,9 @@ const StudentDashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [availableCourses, setAvailableCourses] = useState<any[]>([]);
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [editDob, setEditDob] = useState("");
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -59,6 +65,8 @@ const StudentDashboard = () => {
     }
 
     setProfile(data);
+    setEditPhone((data as any)?.phone || "");
+    setEditDob((data as any)?.date_of_birth || "");
   };
 
   const loadEnrollments = async () => {
@@ -143,6 +151,15 @@ const StudentDashboard = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Welcome back, {profile.full_name}!</h1>
           <p className="text-muted-foreground">Continue your learning journey</p>
+          {(profile as any)?.phone && (
+            <p className="text-xs text-muted-foreground">Phone: {(profile as any).phone}</p>
+          )}
+          {(profile as any)?.date_of_birth && (
+            <p className="text-xs text-muted-foreground">DOB: {(profile as any).date_of_birth}</p>
+          )}
+          <div className="mt-2">
+            <Button variant="outline" size="sm" onClick={() => setProfileEditOpen(true)}>Edit Profile</Button>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3 mb-8">
@@ -265,6 +282,42 @@ const StudentDashboard = () => {
           </CardContent>
         </Card>
       </main>
+      <div>
+        <Dialog open={profileEditOpen} onOpenChange={setProfileEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Profile</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="student-phone">Phone</Label>
+                <Input id="student-phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="student-dob">Date of Birth</Label>
+                <Input id="student-dob" type="date" value={editDob} onChange={(e) => setEditDob(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setProfileEditOpen(false)}>Cancel</Button>
+              <Button onClick={async () => {
+                if (!user) return;
+                try {
+                  const updated = await updateProfile({
+                    id: user.id,
+                    phone: editPhone || null,
+                    dateOfBirth: editDob || null,
+                  });
+                  setProfile(updated);
+                  setProfileEditOpen(false);
+                } catch (e: any) {
+                  console.error(e);
+                }
+              }}>Save</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 };
