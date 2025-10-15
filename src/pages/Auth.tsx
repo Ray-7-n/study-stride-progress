@@ -60,9 +60,10 @@ const Auth = () => {
           data: {
             full_name: fullName,
             role: role,
-            phone: phone || undefined,
-            date_of_birth: dateOfBirth || undefined,
-            experience: experience ? Number(experience) : undefined,
+            // only include extra fields for instructors
+            phone: role === "instructor" ? (phone || undefined) : undefined,
+            date_of_birth: role === "instructor" ? (dateOfBirth || undefined) : undefined,
+            experience: role === "instructor" && experience ? Number(experience) : undefined,
           },
           emailRedirectTo: `https://study-stride-progress.vercel.app/`,
         },
@@ -230,37 +231,41 @@ const Auth = () => {
                     minLength={6}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Phone (optional)</Label>
-                  <Input
-                    id="signup-phone"
-                    type="tel"
-                    placeholder="+1 555 123 4567"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-dob">Date of Birth (optional)</Label>
-                    <Input
-                      id="signup-dob"
-                      type="date"
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-exp">Experience in years (optional)</Label>
-                    <Input
-                      id="signup-exp"
-                      type="number"
-                      min="0"
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                    />
-                  </div>
-                </div>
+                {role === "instructor" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-phone">Phone (optional)</Label>
+                      <Input
+                        id="signup-phone"
+                        type="tel"
+                        placeholder="+1 555 123 4567"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-dob">Date of Birth (optional)</Label>
+                        <Input
+                          id="signup-dob"
+                          type="date"
+                          value={dateOfBirth}
+                          onChange={(e) => setDateOfBirth(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-exp">Experience in years (optional)</Label>
+                        <Input
+                          id="signup-exp"
+                          type="number"
+                          min="0"
+                          value={experience}
+                          onChange={(e) => setExperience(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
                   <Label>I am a...</Label>
                   <RadioGroup value={role} onValueChange={(value: any) => setRole(value)}>
