@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, BarChart3, LogOut, GraduationCap, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { createCourse } from "@/integrations/supabase/api";
 
 const InstructorDashboard = () => {
   const navigate = useNavigate();
@@ -74,6 +75,23 @@ const InstructorDashboard = () => {
     setCourses(data || []);
   };
 
+  const handleCreateCourse = async () => {
+    if (!user) return;
+    try {
+      const newCourse = await createCourse({
+        title: "Untitled Course",
+        description: "",
+        instructorId: user.id,
+        skillCategory: "general",
+        isPublished: false,
+      });
+      toast.success("Course created");
+      setCourses((prev) => [newCourse, ...prev]);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Failed to create course");
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.success("Signed out successfully!");
@@ -113,7 +131,7 @@ const InstructorDashboard = () => {
             <h1 className="text-4xl font-bold mb-2">Instructor Dashboard</h1>
             <p className="text-muted-foreground">Manage your courses and track student progress</p>
           </div>
-          <Button className="bg-gradient-primary shadow-elegant">
+          <Button className="bg-gradient-primary shadow-elegant" onClick={handleCreateCourse}>
             <Plus className="h-4 w-4 mr-2" />
             Create Course
           </Button>

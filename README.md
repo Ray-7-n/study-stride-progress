@@ -71,3 +71,41 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Environment setup
+
+1) Create a `.env.local` file in the project root with:
+
+```
+VITE_SUPABASE_URL=<your-supabase-project-url>
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-supabase-anon-or-publishable-key>
+# Optional: database URL for tooling/migrations (not used by frontend runtime)
+# DATABASE_URL=postgresql://postgres:Esb%26UpsfYV7VG%2FU@db.efqbcrchmazqbscqifsn.supabase.co:5432/postgres
+```
+
+PowerShell one-liner to create/update the file:
+
+```powershell
+@'
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+# DATABASE_URL=postgresql://postgres:Esb%26UpsfYV7VG%2FU@db.efqbcrchmazqbscqifsn.supabase.co:5432/postgres
+'@ | Set-Content -NoNewline .env.local
+```
+
+2) Install dependencies and run the dev server:
+
+```powershell
+npm i
+npm run dev
+```
+
+3) Database migrations (optional, requires Supabase CLI):
+
+```powershell
+# Push local migrations to remote db (uses scripts added in package.json)
+npm run db:push
+
+# Reset remote db (DANGEROUS: drops data)
+npm run db:reset
+```

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,40 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"student" | "instructor">("student");
+  const [resetEmail, setResetEmail] = useState("");
+
+  const routeToRole = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    if (error) {
+      // Fallback to generic dashboard if role not yet available
+      navigate("/dashboard");
+      return;
+    }
+    if (data?.role === "instructor") {
+      navigate("/instructor-dashboard");
+    } else {
+      navigate("/student-dashboard");
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        routeToRole(session.user.id);
+      }
+    });
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -37,7 +64,14 @@ const Auth = () => {
 
       if (error) throw error;
 
-      toast.success("Account created! You can now sign in.");
+      if (data.user?.identities && data.user.identities.length > 0 && data.user.id) {
+        // Email confirmations disabled: user session likely active; route by role
+        toast.success("Account created! Redirecting...");
+        await routeToRole(data.user.id);
+      } else {
+        // Email confirmations enabled: prompt user to check inbox
+        toast.success("Check your email to confirm your account.");
+      }
       setEmail("");
       setPassword("");
       setFullName("");
@@ -61,9 +95,30 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success("Signed in successfully!");
-      navigate("/dashboard");
+      const user = (await supabase.auth.getUser()).data.user;
+      if (user?.id) {
+        await routeToRole(user.id);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail || email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+      if (error) throw error;
+      toast.success("Password reset email sent.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset email");
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +172,16 @@ const Auth = () => {
                 >
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
+                <div className="text-right">
+                  <button
+                    type="button"
+                    className="text-sm text-primary underline"
+                    onClick={handleResetPassword}
+                    disabled={isLoading || (!email && !resetEmail)}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </form>
             </TabsContent>
 
