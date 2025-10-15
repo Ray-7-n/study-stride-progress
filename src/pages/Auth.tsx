@@ -58,7 +58,7 @@ const Auth = () => {
             full_name: fullName,
             role: role,
           },
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `https://study-stride-progress.vercel.app/`,
         },
       });
 
@@ -113,7 +113,7 @@ const Auth = () => {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail || email, {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `https://study-stride-progress.vercel.app/`,
       });
       if (error) throw error;
       toast.success("Password reset email sent.");
